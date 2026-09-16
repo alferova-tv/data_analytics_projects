@@ -1,0 +1,4 @@
+data/raw/
+data/processed/train.parquet
+src/__pycache__/
+.DS_Store

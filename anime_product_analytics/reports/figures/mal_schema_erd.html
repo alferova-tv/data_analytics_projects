@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyAnimeList — Schema ERD</title>
+<style>
+  :root {
+    --bg: #F6F2FA;
+    --surface: #FFFFFF;
+    --ink: #241A2E;
+    --ink-muted: #6E5F7C;
+    --line: #E3D9EC;
+    --line-soft: #EFE7F5;
+    --accent-details: #4A235A;
+    --accent-details-tint: #ECE0F1;
+    --accent-ratings: #7D3C98;
+    --accent-ratings-tint: #F1E4F7;
+    --accent-stats: #A569BD;
+    --accent-stats-tint: #F5EBFA;
+    --link-ratings: #8E44AD;
+    --link-stats: #AD7BC4;
+    --on-accent: #FFFFFF;
+    --shadow: 0 1px 2px rgba(74,35,90,.07), 0 10px 28px rgba(74,35,90,.09);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #170F20;
+      --surface: #211732;
+      --ink: #F1E9F7;
+      --ink-muted: #AF9EC1;
+      --line: #3B2C4E;
+      --line-soft: #2A2038;
+      --accent-details: #D8AEEC;
+      --accent-details-tint: #33243F;
+      --accent-ratings: #C093D9;
+      --accent-ratings-tint: #2E2140;
+      --accent-stats: #A97BC4;
+      --accent-stats-tint: #291F3A;
+      --link-ratings: #C79AE0;
+      --link-stats: #9E76BA;
+      --on-accent: #1B1424;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #170F20;
+    --surface: #211732;
+    --ink: #F1E9F7;
+    --ink-muted: #AF9EC1;
+    --line: #3B2C4E;
+    --line-soft: #2A2038;
+    --accent-details: #D8AEEC;
+    --accent-details-tint: #33243F;
+    --accent-ratings: #C093D9;
+    --accent-ratings-tint: #2E2140;
+    --accent-stats: #A97BC4;
+    --accent-stats-tint: #291F3A;
+    --link-ratings: #C79AE0;
+    --link-stats: #9E76BA;
+    --on-accent: #1B1424;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"] {
+    --bg: #F6F2FA;
+    --surface: #FFFFFF;
+    --ink: #241A2E;
+    --ink-muted: #6E5F7C;
+    --line: #E3D9EC;
+    --line-soft: #EFE7F5;
+    --accent-details: #4A235A;
+    --accent-details-tint: #ECE0F1;
+    --accent-ratings: #7D3C98;
+    --accent-ratings-tint: #F1E4F7;
+    --accent-stats: #A569BD;
+    --accent-stats-tint: #F5EBFA;
+    --link-ratings: #8E44AD;
+    --link-stats: #AD7BC4;
+    --on-accent: #FFFFFF;
+    --shadow: 0 1px 2px rgba(74,35,90,.07), 0 10px 28px rgba(74,35,90,.09);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    padding: 2.5rem 1.5rem 3.5rem;
+  }
+  .page { max-width: 1180px; margin: 0 auto; }
+
+  header.top { margin-bottom: 2rem; }
+  header.top .eyebrow {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent-ratings);
+    margin: 0 0 .5rem;
+  }
+  header.top h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin: 0 0 .4rem;
+    text-wrap: balance;
+    letter-spacing: -.01em;
+  }
+  header.top p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: .92rem;
+    max-width: 65ch;
+  }
+
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    margin-top: 1.1rem;
+  }
+  .summary span {
+    font-size: .78rem;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: .35rem .7rem;
+    border-radius: 100px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary b { color: var(--ink); font-weight: 600; }
+
+  #diagram {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1.35fr 1fr;
+    gap: 3.2rem;
+    align-items: start;
+    margin-top: 2.2rem;
+  }
+  #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+
+  @media (max-width: 880px) {
+    #diagram { grid-template-columns: 1fr; gap: 3rem; }
+  }
+
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise .5s ease forwards;
+  }
+  .card.details { align-self: center; }
+  .card:nth-of-type(1) { animation-delay: .05s; }
+  .card:nth-of-type(2) { animation-delay: .15s; }
+  .card:nth-of-type(3) { animation-delay: .25s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .card { animation: none; opacity: 1; transform: none; }
+  }
+
+  .card > .head {
+    padding: .7rem 1rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--on-accent);
+  }
+  .card.ratings > .head { background: var(--accent-ratings); }
+  .card.details > .head { background: var(--accent-details); }
+  .card.stats   > .head { background: var(--accent-stats); }
+  .head .schema { opacity: .75; font-weight: 400; }
+
+  .rows { padding: .35rem 0; }
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .8rem;
+    padding: .38rem 1rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .8rem;
+    border-top: 1px solid var(--line-soft);
+  }
+  .row:first-child { border-top: none; }
+  .row .name { color: var(--ink); display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+  .row .type { color: var(--ink-muted); font-size: .74rem; white-space: nowrap; }
+  .row.key { position: relative; }
+  .row.ratings-key { background: var(--accent-ratings-tint); box-shadow: inset 3px 0 0 var(--link-ratings); }
+  .row.stats-key { background: var(--accent-stats-tint); box-shadow: inset 3px 0 0 var(--link-stats); }
+  .row.ellipsis { justify-content: center; color: var(--ink-muted); letter-spacing: .3em; padding: .3rem 1rem; }
+  .row.ellipsis .name { color: var(--ink-muted); }
+
+  .badge {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .58rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: .08rem .34rem;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .badge.pk { background: var(--accent-details); color: var(--on-accent); }
+  .badge.fk { border: 1px solid var(--ink-muted); color: var(--ink-muted); }
+
+  .foot {
+    border-top: 1px dashed var(--line);
+    padding: .55rem 1rem;
+    font-size: .72rem;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .legend {
+    margin-top: 2.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.6rem;
+    align-items: center;
+    font-size: .78rem;
+    color: var(--ink-muted);
+    border-top: 1px solid var(--line);
+    padding-top: 1.1rem;
+  }
+  .legend .item { display: flex; align-items: center; gap: .5rem; }
+  .legend svg { flex: none; }
+  .legend .badge { margin-right: 0; }
+
+  .dict { margin-top: 3.4rem; }
+  .dict-head p { margin: .3rem 0 0; color: var(--ink-muted); font-size: .85rem; max-width: 65ch; }
+  .dict-head h2 { font-size: 1.2rem; margin: 0; letter-spacing: -.01em; }
+  .dict-table {
+    margin-top: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .dict-caption {
+    padding: .65rem 1rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--on-accent);
+  }
+  .dict-caption { background: var(--accent-ratings); }
+  .dict-row.more { justify-content: center; color: var(--ink-muted); font-style: italic; }
+  .dict-row {
+    display: flex;
+    gap: 1.2rem;
+    padding: .55rem 1rem;
+    border-top: 1px solid var(--line-soft);
+    align-items: baseline;
+  }
+  .dict-row:first-of-type { border-top: none; }
+  .dict-row .field {
+    flex: 0 0 210px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .8rem;
+    color: var(--ink);
+  }
+  .dict-row .field .type {
+    display: block;
+    color: var(--ink-muted);
+    font-size: .68rem;
+    margin-top: .1rem;
+    font-weight: 400;
+  }
+  .dict-row .desc { flex: 1; font-size: .85rem; color: var(--ink-muted); line-height: 1.45; }
+  @media (max-width: 620px) {
+    .dict-row { flex-direction: column; gap: .15rem; }
+    .dict-row .field { flex: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="top">
+    <p class="eyebrow">MyAnimeList</p>
+    <h1>details, ratings &amp; stats — entity relationships</h1>
+    <p>Диаграмма построена по трём таблицам датасета Kaggle «Anime Dataset (Jan 1917 – Oct 2025)». Details хранит характеристики самих тайтлов — жанры, оценки, популярность, даты выхода. Ratings — взаимодействия отдельных пользователей с разными тайтлами. Stats — агрегированные по каждому тайтлу показатели. Часть полей на диаграмме скрыта — они не используются в проекте.</p>
+    <div class="summary">
+      <span><b>details</b> — 29 cols, 1 PK</span>
+      <span><b>ratings</b> — 6 cols, 1 FK, 1 unique</span>
+      <span><b>stats</b> — 27 cols, 1 PK+FK</span>
+      <span>2 relationships</span>
+    </div>
+  </header>
+
+  <div id="diagram">
+    <svg id="links"><defs></defs></svg>
+
+    <div class="card ratings">
+      <div class="head"><span class="schema">"MyAnimeList".</span>ratings</div>
+      <div class="rows">
+        <div class="row"><span class="name">username</span><span class="type">varchar(50)</span></div>
+        <div class="row key ratings-key" id="ratings-anime_id"><span class="name"><span class="badge fk">FK</span>anime_id</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">status</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">score</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">is_rewatching</span><span class="type">real</span></div>
+        <div class="row"><span class="name">num_watched_episodes</span><span class="type">integer</span></div>
+      </div>
+      <div class="foot">UNIQUE&nbsp;(username, anime_id)</div>
+    </div>
+
+    <div class="card details">
+      <div class="head"><span class="schema">"MyAnimeList".</span>details</div>
+      <div class="rows">
+        <div class="row key" id="details-mal_id"><span class="name"><span class="badge pk">PK</span>mal_id</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">title</span><span class="type">text</span></div>
+        <div class="row"><span class="name">type</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">status</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">score</span><span class="type">real</span></div>
+        <div class="row"><span class="name">scored_by</span><span class="type">real</span></div>
+        <div class="row"><span class="name">start_date</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">end_date</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">rank</span><span class="type">real</span></div>
+        <div class="row"><span class="name">popularity</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">members</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">favorites</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">genres</span><span class="type">text</span></div>
+        <div class="row"><span class="name">studios</span><span class="type">text</span></div>
+        <div class="row"><span class="name">themes</span><span class="type">text</span></div>
+        <div class="row"><span class="name">demographics</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">source</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">rating</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">episodes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">season</span><span class="type">varchar(50)</span></div>
+        <div class="row"><span class="name">year</span><span class="type">real</span></div>
+      </div>
+    </div>
+
+    <div class="card stats">
+      <div class="head"><span class="schema">"MyAnimeList".</span>stats</div>
+      <div class="rows">
+        <div class="row key stats-key" id="stats-mal_id"><span class="name"><span class="badge pk">PK</span><span class="badge fk">FK</span>mal_id</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">watching</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">completed</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">on_hold</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">dropped</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">plan_to_watch</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">total</span><span class="type">integer</span></div>
+        <div class="row"><span class="name">score_1_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_1_percentage</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_2_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_2_percentage</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_3_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_3_percentage</span><span class="type">real</span></div>
+        <div class="row ellipsis"><span class="name">&#8230;</span></div>
+        <div class="row"><span class="name">score_8_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_8_percentage</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_9_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_9_percentage</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_10_votes</span><span class="type">real</span></div>
+        <div class="row"><span class="name">score_10_percentage</span><span class="type">real</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><svg width="34" height="10"><line x1="1" y1="5" x2="33" y2="5" stroke="var(--link-ratings)" stroke-width="2"/></svg> ratings → details &nbsp;(many&nbsp;:&nbsp;one)</div>
+    <div class="item"><svg width="34" height="10"><line x1="1" y1="5" x2="33" y2="5" stroke="var(--link-stats)" stroke-width="2"/></svg> stats → details &nbsp;(one&nbsp;:&nbsp;one)</div>
+    <div class="item"><span class="badge pk">PK</span> primary key</div>
+    <div class="item"><span class="badge fk">FK</span> foreign key</div>
+  </div>
+
+  <div class="dict">
+    <div class="dict-head">
+      <h2>Data dictionary</h2>
+    </div>
+
+    <div class="dict-table ratings">
+      <div class="dict-caption">"MyAnimeList".ratings</div>
+      <div class="dict-row"><span class="field">username<span class="type">varchar(50)</span></span><span class="desc">Уникальный ник пользователя</span></div>
+      <div class="dict-row"><span class="field">anime_id<span class="type">integer</span></span><span class="desc">Id аниме, с которым связана запись</span></div>
+      <div class="dict-row"><span class="field">status<span class="type">varchar(50)</span></span><span class="desc">Статус просмотра: смотрю, завершено, отложено, брошено, планирую посмотреть</span></div>
+      <div class="dict-row"><span class="field">score<span class="type">integer</span></span><span class="desc">Оценка аниме пользователем по 10-балльной шкале</span></div>
+      <div class="dict-row"><span class="field">is_rewatching<span class="type">real</span></span><span class="desc">Признак того, что пользователь пересматривает аниме повторно</span></div>
+      <div class="dict-row"><span class="field">num_watched_episodes<span class="type">integer</span></span><span class="desc">Число просмотренных пользователем эпизодов</span></div>
+    </div>
+
+    <div class="dict-table details">
+      <div class="dict-caption">"MyAnimeList".details</div>
+      <div class="dict-row"><span class="field">mal_id<span class="type">integer</span></span><span class="desc">Id аниме на MyAnimeList, уникальный идентификатор тайтла</span></div>
+      <div class="dict-row"><span class="field">title<span class="type">text</span></span><span class="desc">Название аниме на английском</span></div>
+      <div class="dict-row"><span class="field">type<span class="type">varchar(50)</span></span><span class="desc">Формат: ТВ-сериал, фильм, OVA и т. д.</span></div>
+      <div class="dict-row"><span class="field">status<span class="type">varchar(50)</span></span><span class="desc">Статус показа: транслируется, завершён, ожидается</span></div>
+      <div class="dict-row"><span class="field">score<span class="type">real</span></span><span class="desc">Оценка аниме пользователями по 10-балльной шкале</span></div>
+      <div class="dict-row"><span class="field">scored_by<span class="type">real</span></span><span class="desc">Число пользователей, оценивших аниме</span></div>
+      <div class="dict-row"><span class="field">start_date<span class="type">varchar(50)</span></span><span class="desc">Дата начала показа</span></div>
+      <div class="dict-row"><span class="field">end_date<span class="type">varchar(50)</span></span><span class="desc">Дата окончания показа</span></div>
+      <div class="dict-row"><span class="field">rank<span class="type">real</span></span><span class="desc">Позиция в общем рейтинге аниме по оценке</span></div>
+      <div class="dict-row"><span class="field">popularity<span class="type">integer</span></span><span class="desc">Рейтинг популярности на основе интереса пользователей</span></div>
+      <div class="dict-row"><span class="field">members<span class="type">integer</span></span><span class="desc">Общее число пользователей, добавивших аниме в свои списки</span></div>
+      <div class="dict-row"><span class="field">favorites<span class="type">integer</span></span><span class="desc">Число пользователей, отметивших аниме как любимое</span></div>
+      <div class="dict-row"><span class="field">genres<span class="type">text</span></span><span class="desc">Список жанров аниме. Например ['Adventure', 'Drama', 'Fantasy']</span></div>
+      <div class="dict-row"><span class="field">studios<span class="type">text</span></span><span class="desc">Студии анимации, участвовавшие в производстве</span></div>
+      <div class="dict-row"><span class="field">themes<span class="type">text</span></span><span class="desc">Тематические теги сюжета, например ['School', 'Team Sports']</span></div>
+      <div class="dict-row"><span class="field">demographics<span class="type">varchar(50)</span></span><span class="desc">Целевая аудитория, например Shounen или Seinen</span></div>
+      <div class="dict-row"><span class="field">source<span class="type">varchar(50)</span></span><span class="desc">Первоисточник: манга, ранобэ, оригинальный сценарий и т. д.</span></div>
+      <div class="dict-row"><span class="field">rating<span class="type">varchar(50)</span></span><span class="desc">Возрастной рейтинг, например PG-13 или R</span></div>
+      <div class="dict-row"><span class="field">episodes<span class="type">real</span></span><span class="desc">Общее число эпизодов</span></div>
+      <div class="dict-row"><span class="field">season<span class="type">varchar(50)</span></span><span class="desc">Сезон выхода: зима, весна, лето, осень</span></div>
+      <div class="dict-row"><span class="field">year<span class="type">real</span></span><span class="desc">Год выхода</span></div>
+    </div>
+
+    <div class="dict-table stats">
+      <div class="dict-caption">"MyAnimeList".stats</div>
+      <div class="dict-row"><span class="field">mal_id<span class="type">integer</span></span><span class="desc">Id аниме на MyAnimeList</span></div>
+      <div class="dict-row"><span class="field">watching<span class="type">integer</span></span><span class="desc">Число пользователей, смотрящих аниме в данный момент</span></div>
+      <div class="dict-row"><span class="field">completed<span class="type">integer</span></span><span class="desc">Число пользователей, завершивших просмотр</span></div>
+      <div class="dict-row"><span class="field">on_hold<span class="type">integer</span></span><span class="desc">Число пользователей, временно приостановивших просмотр</span></div>
+      <div class="dict-row"><span class="field">dropped<span class="type">integer</span></span><span class="desc">Число пользователей, бросивших просмотр до завершения</span></div>
+      <div class="dict-row"><span class="field">plan_to_watch<span class="type">integer</span></span><span class="desc">Число пользователей, планирующих посмотреть аниме</span></div>
+      <div class="dict-row"><span class="field">total<span class="type">integer</span></span><span class="desc">Общее число пользователей, добавивших аниме в свои списки</span></div>
+      <div class="dict-row"><span class="field">score_1_votes<span class="type">real</span></span><span class="desc">Число пользователей, поставивших оценку 1/10</span></div>
+      <div class="dict-row"><span class="field">score_1_percentage<span class="type">real</span></span><span class="desc">Доля голосов с оценкой 1/10 от всех оценивших</span></div>
+      <div class="dict-row"><span class="field">score_2_votes<span class="type">real</span></span><span class="desc">Число пользователей, поставивших оценку 2/10</span></div>
+      <div class="dict-row"><span class="field">score_2_percentage<span class="type">real</span></span><span class="desc">Доля голосов с оценкой 2/10 от всех оценивших</span></div>
+      <div class="dict-row more"><span class="desc">и так далее до 10</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var svg = document.getElementById('links');
+  var container = document.getElementById('diagram');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function ns(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+  function anchorPoint(fromEl, toEl, containerRect) {
+    var a = fromEl.getBoundingClientRect();
+    var b = toEl.getBoundingClientRect();
+    var ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+    var bx = b.left + b.width / 2, by = b.top + b.height / 2;
+    var dx = bx - ax, dy = by - ay;
+    var x, y, dirx, diry;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      x = dx > 0 ? a.right : a.left;
+      y = ay;
+      dirx = dx > 0 ? 1 : -1; diry = 0;
+    } else {
+      x = ax;
+      y = dy > 0 ? a.bottom : a.top;
+      dirx = 0; diry = dy > 0 ? 1 : -1;
+    }
+    return { x: x - containerRect.left, y: y - containerRect.top, dirx: dirx, diry: diry };
+  }
+
+  function path(p1, p2) {
+    var horizontal = Math.abs(p2.x - p1.x) >= Math.abs(p2.y - p1.y);
+    var c1, c2;
+    if (horizontal) {
+      var mx = p1.x + (p2.x - p1.x) / 2;
+      c1 = { x: mx, y: p1.y }; c2 = { x: mx, y: p2.y };
+    } else {
+      var my = p1.y + (p2.y - p1.y) / 2;
+      c1 = { x: p1.x, y: my }; c2 = { x: p2.x, y: my };
+    }
+    return 'M ' + p1.x + ' ' + p1.y + ' C ' + c1.x + ' ' + c1.y + ', ' + c2.x + ' ' + c2.y + ', ' + p2.x + ' ' + p2.y;
+  }
+
+  function crowsFoot(p, color) {
+    var back = { x: p.x - p.dirx * 12, y: p.y - p.diry * 12 };
+    var perpx = -p.diry, perpy = p.dirx;
+    var top = { x: back.x + perpx * 6, y: back.y + perpy * 6 };
+    var bot = { x: back.x - perpx * 6, y: back.y - perpy * 6 };
+    var g = ns('path');
+    g.setAttribute('d', 'M ' + top.x + ' ' + top.y + ' L ' + p.x + ' ' + p.y + ' M ' + bot.x + ' ' + bot.y + ' L ' + p.x + ' ' + p.y);
+    g.setAttribute('stroke', color);
+    g.setAttribute('stroke-width', '1.6');
+    g.setAttribute('fill', 'none');
+    g.setAttribute('stroke-linecap', 'round');
+    return g;
+  }
+
+  function dot(p, color) {
+    var c = ns('circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 3.5);
+    c.setAttribute('fill', getComputedStyle(document.documentElement).getPropertyValue('--surface'));
+    c.setAttribute('stroke', color);
+    c.setAttribute('stroke-width', '1.6');
+    return c;
+  }
+
+  function draw() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var rect = container.getBoundingClientRect();
+    svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
+
+    var ratingsEl = document.getElementById('ratings-anime_id');
+    var statsEl = document.getElementById('stats-mal_id');
+    var detailsEl = document.getElementById('details-mal_id');
+    var linkRatings = getComputedStyle(document.documentElement).getPropertyValue('--link-ratings').trim();
+    var linkStats = getComputedStyle(document.documentElement).getPropertyValue('--link-stats').trim();
+
+    [ { from: ratingsEl, to: detailsEl, color: linkRatings, foot: true },
+      { from: statsEl, to: detailsEl, color: linkStats, foot: false } ].forEach(function (rel) {
+      var p1 = anchorPoint(rel.from, rel.to, rect);
+      var p2 = anchorPoint(rel.to, rel.from, rect);
+      var line = ns('path');
+      line.setAttribute('d', path(p1, p2));
+      line.setAttribute('stroke', rel.color);
+      line.setAttribute('stroke-width', '1.8');
+      line.setAttribute('fill', 'none');
+      if (!reduceMotion) {
+        var len = 900;
+        line.style.strokeDasharray = len;
+        line.style.strokeDashoffset = len;
+        line.style.animation = 'draw-line 1s ease forwards .4s';
+      }
+      svg.appendChild(line);
+      svg.appendChild(dot(p2, rel.color));
+      if (rel.foot) svg.appendChild(crowsFoot(p1, rel.color));
+      else svg.appendChild(dot(p1, rel.color));
+    });
+  }
+
+  var styleTag = document.createElement('style');
+  styleTag.textContent = '@keyframes draw-line { to { stroke-dashoffset: 0; } }';
+  document.head.appendChild(styleTag);
+
+  var raf;
+  function scheduleDraw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); }
+  window.addEventListener('load', scheduleDraw);
+  window.addEventListener('resize', scheduleDraw);
+  new MutationObserver(scheduleDraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  scheduleDraw();
+})();
+</script>
+</body>
+</html>
