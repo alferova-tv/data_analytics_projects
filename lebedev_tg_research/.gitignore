@@ -1,0 +1,14 @@
+.env
+*.session
+.venv/
+.DS_Store
+__pycache__/
+*.zip
+# данные лежат в архиве по ссылке из README, в репозитории только ручная разметка
+data/*
+!data/tone_manual.csv
+
+# рабочие заметки
+TASK.md
+export_draft.txt
+основные_тейки.md

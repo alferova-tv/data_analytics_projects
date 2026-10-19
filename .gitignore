@@ -1,0 +1,26 @@
+# данные (не коммитим сырые/обработанные файлы)
+anime_product_analytics/data/raw/*
+anime_product_analytics/data/processed/*
+santander_churn_cohorts/data/raw/*
+santander_churn_cohorts/data/processed/*
+!**/.gitkeep
+# словари полей - это документация, а не данные, их коммитим
+!santander_churn_cohorts/data/raw/santander_data_dictionary.md
+!anime_product_analytics/data/raw/anime_data_dictionary.md
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# jupyter
+.ipynb_checkpoints/
+anime-product-analytics/notebooks/draft.ipynb
+
+# os / editor
+.DS_Store
+.vscode/
+.claude/
+CLAUDE.md
