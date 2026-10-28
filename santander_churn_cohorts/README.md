@@ -24,7 +24,7 @@
 
 <img src="reports/figures/cohort_retention.png" width="620" alt="Матрица удержания активных клиентов по когортам подключения">
 
-<img src="reports/figures/product_churn_rate.png" width="620" alt="Месячный отток по продуктам: доля уходов от месяцев, в которых продукт был у клиента">
+<img src="reports/figures/product_churn_rate.png" width="620" alt="Месячный отток по продуктам: доля клиентов, которые перестали пользоваться продуктом, за месяц">
 
 ## Задачи проекта
 
