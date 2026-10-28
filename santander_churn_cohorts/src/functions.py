@@ -158,3 +158,38 @@ def product_transitions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     res["мигание_проц"] = (100 * res["мигание"] / res["ушли"].replace(0, pd.NA)).round(1)
     res["чистый_отток"] = res["ушли"] - res["мигание"]
     return res.sort_values("ушли", ascending=False).reset_index(drop=True)
+
+
+def product_churn_rate(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """Месячный отток по продуктам: доля уходов от месяцев, в которых продукт был.
+
+    База - пары соседних снимков, где в первом месяце флаг 1. Уход и возврат через месяц
+    определяются так же, как в `product_transitions`, поэтому числа уходов совпадают.
+    """
+    flags = ",\n ".join(f"{flag_expr(c)} AS {c}" for c in PRODUCTS)
+    lags = ",\n ".join(f"lag({c}) OVER w AS l_{c}" for c in PRODUCTS)
+    leads = ",\n ".join(f"lead({c}) OVER w AS n_{c}" for c in PRODUCTS)
+    aggs = ",\n ".join(
+        f"count(*) FILTER (WHERE l_{c} = 1) AS {c}_база, "
+        f"count(*) FILTER (WHERE l_{c} = 1 AND {c} = 0) AS {c}_уход, "
+        f"count(*) FILTER (WHERE l_{c} = 1 AND {c} = 0 AND n_{c} = 1) AS {c}_возврат"
+        for c in PRODUCTS
+    )
+    row = con.execute(f"""
+        WITH b AS (SELECT ncodpers, fecha_dato, {flags} FROM t),
+             w AS (SELECT *, {lags}, {leads} FROM b
+                   WINDOW w AS (PARTITION BY ncodpers ORDER BY fecha_dato))
+        SELECT {aggs} FROM w
+    """).fetchdf().iloc[0]
+
+    res = pd.DataFrame({
+        "продукт": [PRODUCT_NAMES[c] for c in PRODUCTS],
+        "колонка": PRODUCTS,
+        "месяцев_с_продуктом": [int(row[f"{c}_база"]) for c in PRODUCTS],
+        "ушли": [int(row[f"{c}_уход"]) for c in PRODUCTS],
+        "вернулись_через_месяц": [int(row[f"{c}_возврат"]) for c in PRODUCTS],
+    })
+    base = res["месяцев_с_продуктом"].replace(0, pd.NA)
+    res["отток_проц"] = (100 * res["ушли"] / base).astype(float).round(2)
+    res["без_возврата_проц"] = (100 * (res["ушли"] - res["вернулись_через_месяц"]) / base).astype(float).round(2)
+    return res.sort_values("отток_проц", ascending=False).reset_index(drop=True)
